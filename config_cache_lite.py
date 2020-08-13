@@ -1,3 +1,12 @@
+"""
+Module that has ConfigCacheLite class
+
+This module is intended to be used in wmcontrol project
+in order to remove wmcontrol's dependency on WMCore
+
+wmcontrol: https://github.com/cms-PdmV/wmcontrol/
+WMCore: https://github.com/dmwm/WMCore/
+"""
 import os
 import json
 import hashlib
@@ -11,7 +20,7 @@ except ImportError:
 class ConfigCacheLite():
     """
     Stripped down version of WMCore's ConfigCache
-    ConfigCacheLite can 
+    ConfigCacheLite has a couple of basic attributes and can read and attach a file
     """
     def __init__(self, cmsweb_url):
         env_proxy = os.getenv('X509_USER_PROXY')
@@ -106,7 +115,7 @@ class ConfigCacheLite():
         doc_url = self.database_name + '/_bulk_docs'
         doc_data = json.dumps({'docs': [self.document]})
         doc_headers = {'Content-Type': 'application/json'}
-        doc_response, doc_code = self.__http_request(doc_url, 'POST', doc_data, doc_headers)
+        doc_response, _ = self.__http_request(doc_url, 'POST', doc_data, doc_headers)
         if isinstance(doc_response, bytes):
             # It is bytes in python 3.4
             doc_response = doc_response.decode('utf-8')
@@ -117,7 +126,8 @@ class ConfigCacheLite():
 
         # Save (attach) attachments to the document
         for attachment_name, attachment_data in self.attachments.items():
-            attachment_md5_base64 = base64.b64encode(hashlib.md5(attachment_data.encode('utf-8')).digest())
+            attachment_data = attachment_data.encode('utf-8')
+            attachment_md5_base64 = base64.b64encode(hashlib.md5(attachment_data).digest())
             # Add Content-MD5 as 'checksum' header
             attachment_headers = {'Content-MD5': attachment_md5_base64,
                                   'Content-Type': 'application/json'}
@@ -129,4 +139,3 @@ class ConfigCacheLite():
             self.__http_request(attachment_url, 'PUT', attachment_data, attachment_headers)
 
         return doc_response['id']
-
