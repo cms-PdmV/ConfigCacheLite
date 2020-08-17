@@ -101,7 +101,9 @@ class TweakMakerLite():
             self.expand_parameter(process, param, expanded_params, '')
 
         # Output modules
+        expanded_params['process.outputModules_'] = []
         for output_module_name in process.outputModules_():
+            expanded_params['process.outputModules_'].append(output_module_name)
             output_module = getattr(process, output_module_name)
             for param in self.output_modules_level:
                 full_path = 'process.%s.%s' % (output_module_name, param)
@@ -151,13 +153,14 @@ class TweakMakerLite():
             if path[0] == 'process':
                 path.pop(0)
 
+        if process is None:
+            return False
+
         if not path:
             return True
 
-        if hasattr(process, path[0]):
-            return self.has_parameter(getattr(process, path[0]), path[1:])
+        return self.has_parameter(getattr(process, path[0], None), path[1:])
 
-        return False
 
     def get_parameter(self, process, path):
         """
@@ -168,10 +171,13 @@ class TweakMakerLite():
             if path[0] == 'process':
                 path.pop(0)
 
+        if process is None:
+            return None
+
         if not path:
             return process.value()
 
-        return self.get_parameter(getattr(process, path[0]), path[1:])
+        return self.get_parameter(getattr(process, path[0], None), path[1:])
 
     def expand_parameter(self, process, path, results, full_path=''):
         """
@@ -181,6 +187,9 @@ class TweakMakerLite():
             path = path.split('.')
             if path[0] == 'process':
                 full_path += path.pop(0)
+
+        if process is None:
+            return
 
         if not path:
             results[full_path] = process.value()
@@ -193,9 +202,8 @@ class TweakMakerLite():
             next_params = [parameter]
 
         for next_param in next_params:
-            if hasattr(process, next_param):
-                next_path = ('%s.%s' % (full_path, next_param)).strip('.')
-                self.expand_parameter(getattr(process, next_param),
-                                      path[1:],
-                                      results,
-                                      next_path)
+            next_path = ('%s.%s' % (full_path, next_param)).strip('.')
+            self.expand_parameter(getattr(process, next_param, None),
+                                  path[1:],
+                                  results,
+                                  next_path)
